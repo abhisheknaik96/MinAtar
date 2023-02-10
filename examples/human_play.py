@@ -12,7 +12,7 @@ from minatar import Environment
 from minatar.gui import GUI
 
 ################################################################################################################
-# Script that allows a human to play any of the MinAtar games. Use arrow keys to move and space to fire. 
+# Script that allows a human to play any of the MinAtar games. Use arrow keys to move and space to fire.
 # Pressing q will exit the game, r will restart.
 #
 ################################################################################################################
@@ -21,7 +21,7 @@ parser.add_argument("--game", "-g", type=str)
 args = parser.parse_args()
 
 # Setup game environment and GUI
-env = Environment(args.game)
+env = Environment(args.game, difficulty_ramping=False)
 gui = GUI(env.game_name(), env.n_channels)
 
 # Thread safe variables for use with GUI
@@ -86,7 +86,7 @@ def play():
     G.set(G.get()+r)
     gui.display_state(env.state())
     gui.set_message("Score: " + str(G.get()))
-    gui.update(50, play)
+    gui.update(200, play)
 
 # Hook up the key handler and initiate game play
 gui.overwrite_key_handle(on_key_event, on_release_event)

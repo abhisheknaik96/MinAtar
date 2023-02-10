@@ -9,9 +9,9 @@ import numpy as np
 #####################################################################################################################
 # Env
 #
-# The player controls a paddle on the bottom of the screen and must bounce a ball tobreak 3 rows of bricks along the 
-# top of the screen. A reward of +1 is given for each brick broken by the ball.  When all bricks are cleared another 3 
-# rows are added. The ball travels only along diagonals, when it hits the paddle it is bounced either to the left or 
+# The player controls a paddle on the bottom of the screen and must bounce a ball tobreak 3 rows of bricks along the
+# top of the screen. A reward of +1 is given for each brick broken by the ball.  When all bricks are cleared another 3
+# rows are added. The ball travels only along diagonals, when it hits the paddle it is bounced either to the left or
 # right depending on the side of the paddle hit, when it hits a wall or brick it is reflected. Termination occurs when
 # the ball hits the bottom of the screen. The balls direction is indicated by a trail channel.
 #
@@ -36,14 +36,14 @@ class Env:
         r = 0
         if(self.terminal):
             return r, self.terminal
-            
+
         a = self.action_map[a]
 
         # Resolve player action
         if(a=='l'):
             self.pos = max(0, self.pos-1)
         elif(a=='r'):
-            self.pos = min(9,self.pos+1)
+            self.pos = min(9, self.pos+1)
 
         # Update ball position
         self.last_x = self.ball_x
@@ -61,38 +61,102 @@ class Env:
             new_x = self.ball_x-1
             new_y = self.ball_y+1
 
-        strike_toggle = False
-        if(new_x<0 or new_x>9):
-            if(new_x<0):
-                new_x = 0
-            if(new_x>9):
-                new_x=9
-            self.ball_dir=[1,0,3,2][self.ball_dir]
-        if(new_y<0):
-            new_y = 0
-            self.ball_dir=[3,2,1,0][self.ball_dir]
-        elif(self.brick_map[new_y,new_x]==1):
-            strike_toggle = True
-            if(not self.strike):
-                r+=1
-                self.strike = True
-                self.brick_map[new_y,new_x]=0
-                new_y = self.last_y
-                self.ball_dir=[3,2,1,0][self.ball_dir]
-        elif(new_y == 9):
-            if(np.count_nonzero(self.brick_map)==0):
-                self.brick_map[1:4,:] = 1
-            if(self.ball_x == self.pos):
-                self.ball_dir=[3,2,1,0][self.ball_dir]
-                new_y = self.last_y
-            elif(new_x == self.pos):
-                self.ball_dir=[2,3,0,1][self.ball_dir]
-                new_y = self.last_y
-            else:
-                self.terminal = True
+        # strike_toggle = False
+        # if(new_x<0 or new_x>9):
+        #     if(new_x<0):
+        #         new_x = 0
+        #     if(new_x>9):
+        #         new_x=9
+        #     self.ball_dir=[1,0,3,2][self.ball_dir]
+        # if(new_y<0):
+        #     new_y = 0
+        #     self.ball_dir=[3,2,1,0][self.ball_dir]
+        # elif(new_y>9):
+        #     r-=1
+        #     new_y = 9
+        #     self.ball_dir = [3,2,1,0][self.ball_dir]
+        #     if(new_x == self.pos):
+        #         self.ball_dir=[2,3,0,1][self.ball_dir]
+        #         new_x = self.last_x
+        # elif(self.brick_map[new_y,new_x]==1):
+        #     strike_toggle = True
+        #     if(not self.strike):
+        #         r+=1
+        #         self.strike = True
+        #         self.brick_map[new_y,new_x]=0
+        #         new_y = self.last_y
+        #         self.ball_dir=[3,2,1,0][self.ball_dir]
+        # elif(new_y == 9):
+        #     if(np.count_nonzero(self.brick_map)==0):
+        #         self.brick_map[1:4,:] = 1
+        #     if(self.ball_x == self.pos):
+        #         self.ball_dir=[3,2,1,0][self.ball_dir]
+        #         new_y = self.last_y
+        #     elif(new_x == self.pos):
+        #         self.ball_dir=[2,3,0,1][self.ball_dir]
+        #         new_y = self.last_y
+        #         new_x = self.last_x
+        #
+        # if(not strike_toggle):
+        #     self.strike = False
 
-        if(not strike_toggle):
-            self.strike = False
+        strike_toggle = False
+        if(new_x < 0 or new_x > 9):
+            if(new_x < 0):
+                new_x, new_y = 0, self.last_y
+            if(new_x > 9):
+                new_x, new_y = 9, self.last_y
+            self.ball_dir=[1,0,3,2][self.ball_dir]
+        if(new_y < 0):
+            new_x, new_y = self.last_x, 0
+            self.ball_dir=[3,2,1,0][self.ball_dir]
+            if(self.brick_map[new_y,new_x]==1):
+                strike_toggle = True
+                if(not self.strike):
+                    r+=1
+                    self.strike = True
+                    self.brick_map[new_y,new_x]=0
+                    new_x, new_y = self.last_x, self.last_y
+                    self.ball_dir=[3,2,1,0][self.ball_dir]
+        elif(new_y > 9):
+            self.ball_dir=[3,2,1,0][self.ball_dir]
+            new_x, new_y = self.last_x, 9
+            r-=1
+        elif(new_y == 9):
+            if(self.ball_x == self.pos):        # ball hits the paddle's top
+                self.ball_dir=[3,2,1,0][self.ball_dir]
+                new_x, new_y = self.last_x, self.last_y
+            elif(new_x == self.pos):            # ball hits the paddle's corner
+                self.ball_dir=[2,3,0,1][self.ball_dir]
+                new_x, new_y = self.last_x, self.last_y
+                # if self.ball_dir == 0:
+                #     new_x = self.last_x - 1
+                #     if new_x < 0:       # to handle multiple collisions at the bottom-left corner
+                #         new_x = 1
+                # elif self.ball_dir == 1:
+                #     new_x = self.last_x + 1
+                #     if new_x > 9:       # to handle multiple collisions at the bottom-right corner
+                #         new_x = 8
+            # re-initialize the bricks once they are all cleared
+            if(np.count_nonzero(self.brick_map)==0):
+                # self.brick_map[1:4,:] = 1
+                self.brick_map[2:5,:] = 1
+
+        if self.brick_map[new_y,self.last_x] == 1:
+            r += 1
+            self.brick_map[new_y,self.last_x] = 0
+            self.ball_dir=[3,2,1,0][self.ball_dir]
+            new_x, new_y = self.last_x, self.last_y
+        if self.brick_map[self.last_y,new_x] == 1:
+            r += 1
+            self.brick_map[self.last_y,new_x] = 0
+            self.ball_dir=[1,0,3,2][self.ball_dir]
+            new_x, new_y = self.last_x, self.last_y
+        if self.brick_map[new_y,new_x] == 1:
+            r += 1
+            self.brick_map[new_y,new_x] = 0
+            self.ball_dir=[2,3,0,1][self.ball_dir]
+            new_x, new_y = self.last_x, self.last_y
 
         self.ball_x = new_x
         self.ball_y = new_y
@@ -100,7 +164,7 @@ class Env:
 
     # Query the current level of the difficulty ramp, difficulty does not ramp in this game, so return None
     def difficulty_ramp(self):
-        return None  
+        return None
 
     # Process the game-state into the 10x10xn state provided to the agent and return
     def state(self):
@@ -113,12 +177,13 @@ class Env:
 
     # Reset to start state for new episode
     def reset(self):
-        self.ball_y = 3
+        self.ball_y = 9
         ball_start = self.random.choice(2)
-        self.ball_x, self.ball_dir = [(0,2),(9,3)][ball_start]
+        self.ball_x, self.ball_dir = [(0,1),(9,0)][ball_start]
         self.pos = 4
         self.brick_map = np.zeros((10,10))
-        self.brick_map[1:4,:] = 1
+        # self.brick_map[1:4,:] = 1
+        self.brick_map[2:5,:] = 1
         self.strike = False
         self.last_x = self.ball_x
         self.last_y = self.ball_y

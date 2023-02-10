@@ -13,11 +13,10 @@ import numpy as np
 ramp_interval = 100
 init_spawn_speed = 10
 init_move_interval = 5
-shot_cool_down = 5
 
 
 #####################################################################################################################
-# Env 
+# Env
 #
 # The player can move freely along the 4 cardinal directions. Enemies and treasure spawn from the sides. A reward of
 # +1 is given for picking up treasure. Termination occurs if the player makes contact with an enemy. Enemy and
@@ -46,7 +45,7 @@ class Env:
         r = 0
         if(self.terminal):
             return r, self.terminal
-            
+
         a = self.action_map[a]
 
         # Spawn enemy if timer is up
@@ -65,15 +64,17 @@ class Env:
             self.player_y = min(8, self.player_y+1)
 
         # Update entities
-        for i in range(len(self.entities)):     
-            x = self.entities[i]    
-            if(x is not None): 
+        for i in range(len(self.entities)):
+            x = self.entities[i]
+            if(x is not None):
                 if(x[0:2]==[self.player_x,self.player_y]):
                     if(self.entities[i][3]):
                         self.entities[i] = None
                         r+=1
                     else:
-                        self.terminal = True
+                        # self.terminal = True
+                        self.entities[i] = None
+                        r-=1
         if(self.move_timer==0):
             self.move_timer = self.move_speed
             for i in range(len(self.entities)):
@@ -87,14 +88,21 @@ class Env:
                             self.entities[i] = None
                             r+=1
                         else:
-                            self.terminal = True
+                            # self.terminal = True
+                            self.entities[i] = None
+                            r-=1
 
         # Update various timers
         self.spawn_timer -= 1
         self.move_timer -= 1
 
 
-        #Ramp difficulty if interval has elapsed
+        # Ramp difficulty if interval has elapsed.
+        # Right now, ramping occurs if (1) ramping is enabled, (2)
+        # ramping is possible, and (3) the ramp_timer has counted down to zero.
+        # Ramping alternates between increases the speed at which object move
+        # and increasing the speed at which objects spawn.
+        # ToDo: make ramping a function of performance.
         if self.ramping and (self.spawn_speed>1 or self.move_speed>1):
             if(self.ramp_timer>=0):
                 self.ramp_timer-=1
